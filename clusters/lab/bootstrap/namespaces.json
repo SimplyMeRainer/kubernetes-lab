@@ -1,0 +1,403 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "media",
+        "labels": {
+          "lab.home.arpa/managed-by": "kubernets"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "monitoring",
+        "labels": {
+          "lab.home.arpa/managed-by": "kubernets"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "cicd",
+        "labels": {
+          "lab.home.arpa/managed-by": "kubernets"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "production",
+        "labels": {
+          "lab.home.arpa/managed-by": "kubernets",
+          "pod-security.kubernetes.io/enforce": "restricted",
+          "pod-security.kubernetes.io/enforce-version": "v1.35"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "staging",
+        "labels": {
+          "lab.home.arpa/managed-by": "kubernets",
+          "pod-security.kubernetes.io/enforce": "restricted",
+          "pod-security.kubernetes.io/enforce-version": "v1.35"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "dns-system",
+        "labels": {
+          "lab.home.arpa/managed-by": "kubernets"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "metallb-system",
+        "labels": {
+          "lab.home.arpa/managed-by": "kubernets"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "local-path-storage",
+        "labels": {
+          "lab.home.arpa/managed-by": "kubernets"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "LimitRange",
+      "metadata": {
+        "name": "defaults",
+        "namespace": "media"
+      },
+      "spec": {
+        "limits": [
+          {
+            "type": "Container",
+            "defaultRequest": {
+              "cpu": "100m",
+              "memory": "128Mi"
+            },
+            "default": {
+              "cpu": "2",
+              "memory": "2Gi"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ResourceQuota",
+      "metadata": {
+        "name": "budget",
+        "namespace": "media"
+      },
+      "spec": {
+        "hard": {
+          "requests.cpu": "8",
+          "requests.memory": "12Gi",
+          "limits.cpu": "24",
+          "limits.memory": "24Gi",
+          "pods": "40",
+          "persistentvolumeclaims": "15"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "LimitRange",
+      "metadata": {
+        "name": "defaults",
+        "namespace": "production"
+      },
+      "spec": {
+        "limits": [
+          {
+            "type": "Container",
+            "defaultRequest": {
+              "cpu": "100m",
+              "memory": "128Mi"
+            },
+            "default": {
+              "cpu": "2",
+              "memory": "2Gi"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ResourceQuota",
+      "metadata": {
+        "name": "budget",
+        "namespace": "production"
+      },
+      "spec": {
+        "hard": {
+          "requests.cpu": "8",
+          "requests.memory": "12Gi",
+          "limits.cpu": "24",
+          "limits.memory": "24Gi",
+          "pods": "40",
+          "persistentvolumeclaims": "15"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "LimitRange",
+      "metadata": {
+        "name": "defaults",
+        "namespace": "staging"
+      },
+      "spec": {
+        "limits": [
+          {
+            "type": "Container",
+            "defaultRequest": {
+              "cpu": "100m",
+              "memory": "128Mi"
+            },
+            "default": {
+              "cpu": "2",
+              "memory": "2Gi"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ResourceQuota",
+      "metadata": {
+        "name": "budget",
+        "namespace": "staging"
+      },
+      "spec": {
+        "hard": {
+          "requests.cpu": "8",
+          "requests.memory": "12Gi",
+          "limits.cpu": "24",
+          "limits.memory": "24Gi",
+          "pods": "40",
+          "persistentvolumeclaims": "15"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "LimitRange",
+      "metadata": {
+        "name": "defaults",
+        "namespace": "cicd"
+      },
+      "spec": {
+        "limits": [
+          {
+            "type": "Container",
+            "defaultRequest": {
+              "cpu": "100m",
+              "memory": "128Mi"
+            },
+            "default": {
+              "cpu": "2",
+              "memory": "2Gi"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ResourceQuota",
+      "metadata": {
+        "name": "budget",
+        "namespace": "cicd"
+      },
+      "spec": {
+        "hard": {
+          "requests.cpu": "8",
+          "requests.memory": "12Gi",
+          "limits.cpu": "24",
+          "limits.memory": "24Gi",
+          "pods": "40",
+          "persistentvolumeclaims": "15"
+        }
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "default-deny",
+        "namespace": "production"
+      },
+      "spec": {
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "allow-dns",
+        "namespace": "production"
+      },
+      "spec": {
+        "podSelector": {},
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "kube-system"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "kube-dns"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "UDP",
+                "port": 53
+              },
+              {
+                "protocol": "TCP",
+                "port": 53
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "default-deny",
+        "namespace": "staging"
+      },
+      "spec": {
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "allow-dns",
+        "namespace": "staging"
+      },
+      "spec": {
+        "podSelector": {},
+        "policyTypes": [
+          "Egress"
+        ],
+        "egress": [
+          {
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "kube-system"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "kube-dns"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "UDP",
+                "port": 53
+              },
+              {
+                "protocol": "TCP",
+                "port": 53
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "media-ingress",
+        "namespace": "media"
+      },
+      "spec": {
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {}
+              },
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "monitoring"
+                  }
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "192.168.1.109/32"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

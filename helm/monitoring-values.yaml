@@ -1,0 +1,68 @@
+grafana:
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    size: 5Gi
+  service:
+    type: LoadBalancer
+    annotations:
+      metallb.io/loadBalancerIPs: 192.168.1.12
+      metallb.io/address-pool: lab-reserved
+    externalTrafficPolicy: Local
+    loadBalancerSourceRanges: [192.168.1.109/32]
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 1Gi}
+  grafana.ini:
+    users:
+      allow_sign_up: false
+    auth.anonymous:
+      enabled: false
+prometheus:
+  service:
+    type: LoadBalancer
+    annotations:
+      metallb.io/loadBalancerIPs: 192.168.1.13
+      metallb.io/address-pool: lab-reserved
+    externalTrafficPolicy: Local
+    loadBalancerSourceRanges: [192.168.1.109/32]
+  prometheusSpec:
+    retention: 7d
+    retentionSize: 10GB
+    resources:
+      requests: {cpu: 500m, memory: 1Gi}
+      limits: {cpu: "2", memory: 4Gi}
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 20Gi
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests: {cpu: 50m, memory: 64Mi}
+      limits: {cpu: 500m, memory: 256Mi}
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 2Gi
+# kubeadm keeps these metrics endpoints on loopback. Do not expose them insecurely.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false

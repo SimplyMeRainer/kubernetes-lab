@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: training-web
+  namespace: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: training-web}
+  template:
+    metadata:
+      labels: {app: training-web}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile: {type: RuntimeDefault}
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels: {app: training-web}
+      containers:
+      - name: web
+        image: nginxinc/nginx-unprivileged:1.28-alpine
+        ports: [{name: http, containerPort: 8080}]
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}
+        resources:
+          requests: {cpu: 50m, memory: 32Mi}
+          limits: {cpu: 250m, memory: 128Mi}
+        readinessProbe:
+          httpGet: {path: /, port: http}
+        livenessProbe:
+          httpGet: {path: /, port: http}
+        volumeMounts:
+        - {name: tmp, mountPath: /tmp}
+      volumes:
+      - {name: tmp, emptyDir: {sizeLimit: 64Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: training-web
+  namespace: staging
+spec:
+  selector: {app: training-web}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: training-web-ci
+  namespace: staging
+spec:
+  podSelector:
+    matchLabels: {app: training-web}
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels: {kubernetes.io/metadata.name: cicd}
+    ports: [{port: 8080, protocol: TCP}]

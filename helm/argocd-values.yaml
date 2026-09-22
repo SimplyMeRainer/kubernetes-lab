@@ -1,0 +1,37 @@
+global:
+  domain: argocd-server.cicd.lab.home.arpa
+configs:
+  params:
+    server.insecure: false
+  cm:
+    timeout.reconciliation: 180s
+    admin.enabled: "true"
+  rbac:
+    policy.default: role:readonly
+server:
+  service:
+    type: LoadBalancer
+    annotations:
+      metallb.io/loadBalancerIPs: 192.168.1.14
+      metallb.io/address-pool: lab-reserved
+    externalTrafficPolicy: Local
+    loadBalancerSourceRanges: [192.168.1.109/32]
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: "1", memory: 512Mi}
+controller:
+  resources:
+    requests: {cpu: 250m, memory: 256Mi}
+    limits: {cpu: "2", memory: 1Gi}
+repoServer:
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: "1", memory: 512Mi}
+redis:
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+dex:
+  enabled: false
+notifications:
+  enabled: false

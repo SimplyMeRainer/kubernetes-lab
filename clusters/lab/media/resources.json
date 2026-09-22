@@ -1,0 +1,971 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolume",
+      "metadata": {
+        "name": "nas-media-library"
+      },
+      "spec": {
+        "capacity": {
+          "storage": "1Ti"
+        },
+        "accessModes": [
+          "ReadWriteMany"
+        ],
+        "persistentVolumeReclaimPolicy": "Retain",
+        "storageClassName": "",
+        "mountOptions": [
+          "nfsvers=3",
+          "hard",
+          "timeo=600",
+          "retrans=2"
+        ],
+        "nfs": {
+          "server": "192.168.1.107",
+          "path": "/volume1/media"
+        },
+        "claimRef": {
+          "namespace": "media",
+          "name": "media-library"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "media-library",
+        "namespace": "media"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteMany"
+        ],
+        "storageClassName": "",
+        "volumeName": "nas-media-library",
+        "resources": {
+          "requests": {
+            "storage": "1Ti"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolume",
+      "metadata": {
+        "name": "nas-downloads"
+      },
+      "spec": {
+        "capacity": {
+          "storage": "1Ti"
+        },
+        "accessModes": [
+          "ReadWriteMany"
+        ],
+        "persistentVolumeReclaimPolicy": "Retain",
+        "storageClassName": "",
+        "mountOptions": [
+          "nfsvers=3",
+          "hard",
+          "timeo=600",
+          "retrans=2"
+        ],
+        "nfs": {
+          "server": "192.168.1.107",
+          "path": "/volume1/downloads"
+        },
+        "claimRef": {
+          "namespace": "media",
+          "name": "downloads"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "downloads",
+        "namespace": "media"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteMany"
+        ],
+        "storageClassName": "",
+        "volumeName": "nas-downloads",
+        "resources": {
+          "requests": {
+            "storage": "1Ti"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "plex-config",
+        "namespace": "media"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "storageClassName": "local-path",
+        "resources": {
+          "requests": {
+            "storage": "10Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "plex",
+        "namespace": "media"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "plex"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "plex"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "plex",
+                "image": "lscr.io/linuxserver/plex@sha256:be083133dfe001b6caed5a321720e6db9d38fdde1ea8f9d29340d40057a7fa53",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 32400
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "PUID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "PGID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "TZ",
+                    "value": "America/New_York"
+                  },
+                  {
+                    "name": "VERSION",
+                    "value": "docker"
+                  },
+                  {
+                    "name": "ADVERTISE_IP",
+                    "value": "http://192.168.1.7:32400/"
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/config"
+                  },
+                  {
+                    "name": "media",
+                    "mountPath": "/data/media",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "downloads",
+                    "mountPath": "/data/downloads"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "200m",
+                    "memory": "256Mi"
+                  },
+                  "limits": {
+                    "cpu": "4",
+                    "memory": "4Gi"
+                  }
+                },
+                "startupProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 5,
+                  "failureThreshold": 60
+                },
+                "readinessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 10
+                },
+                "livenessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 30,
+                  "failureThreshold": 5
+                }
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "persistentVolumeClaim": {
+                  "claimName": "plex-config"
+                }
+              },
+              {
+                "name": "media",
+                "persistentVolumeClaim": {
+                  "claimName": "media-library"
+                }
+              },
+              {
+                "name": "downloads",
+                "persistentVolumeClaim": {
+                  "claimName": "downloads"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "plex",
+        "namespace": "media",
+        "annotations": {
+          "metallb.io/loadBalancerIPs": "192.168.1.7",
+          "metallb.io/address-pool": "lab-reserved"
+        }
+      },
+      "spec": {
+        "type": "LoadBalancer",
+        "allocateLoadBalancerNodePorts": false,
+        "externalTrafficPolicy": "Local",
+        "loadBalancerSourceRanges": [
+          "192.168.1.109/32"
+        ],
+        "selector": {
+          "app": "plex"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 32400,
+            "targetPort": "http",
+            "protocol": "TCP"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "radarr-config",
+        "namespace": "media"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "storageClassName": "local-path",
+        "resources": {
+          "requests": {
+            "storage": "10Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "radarr",
+        "namespace": "media"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "radarr"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "radarr"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "radarr",
+                "image": "lscr.io/linuxserver/radarr@sha256:adb6c09d6b729ea5e642c99cea35af72702ef476bf4763f153299ac5db9f0b4f",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 7878
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "PUID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "PGID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "TZ",
+                    "value": "America/New_York"
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/config"
+                  },
+                  {
+                    "name": "media",
+                    "mountPath": "/data/media",
+                    "readOnly": false
+                  },
+                  {
+                    "name": "downloads",
+                    "mountPath": "/data/downloads"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "200m",
+                    "memory": "256Mi"
+                  },
+                  "limits": {
+                    "cpu": "2",
+                    "memory": "2Gi"
+                  }
+                },
+                "startupProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 5,
+                  "failureThreshold": 60
+                },
+                "readinessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 10
+                },
+                "livenessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 30,
+                  "failureThreshold": 5
+                }
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "persistentVolumeClaim": {
+                  "claimName": "radarr-config"
+                }
+              },
+              {
+                "name": "media",
+                "persistentVolumeClaim": {
+                  "claimName": "media-library"
+                }
+              },
+              {
+                "name": "downloads",
+                "persistentVolumeClaim": {
+                  "claimName": "downloads"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "radarr",
+        "namespace": "media",
+        "annotations": {
+          "metallb.io/loadBalancerIPs": "192.168.1.8",
+          "metallb.io/address-pool": "lab-reserved"
+        }
+      },
+      "spec": {
+        "type": "LoadBalancer",
+        "allocateLoadBalancerNodePorts": false,
+        "externalTrafficPolicy": "Local",
+        "loadBalancerSourceRanges": [
+          "192.168.1.109/32"
+        ],
+        "selector": {
+          "app": "radarr"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 7878,
+            "targetPort": "http",
+            "protocol": "TCP"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "sonarr-config",
+        "namespace": "media"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "storageClassName": "local-path",
+        "resources": {
+          "requests": {
+            "storage": "10Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "sonarr",
+        "namespace": "media"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "sonarr"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "sonarr"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "sonarr",
+                "image": "lscr.io/linuxserver/sonarr@sha256:a5c1a5fecbef946927ab90ad68df319ac5fe644057e5fc18cd993f01ac07b2b2",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8989
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "PUID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "PGID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "TZ",
+                    "value": "America/New_York"
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/config"
+                  },
+                  {
+                    "name": "media",
+                    "mountPath": "/data/media",
+                    "readOnly": false
+                  },
+                  {
+                    "name": "downloads",
+                    "mountPath": "/data/downloads"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "200m",
+                    "memory": "256Mi"
+                  },
+                  "limits": {
+                    "cpu": "2",
+                    "memory": "2Gi"
+                  }
+                },
+                "startupProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 5,
+                  "failureThreshold": 60
+                },
+                "readinessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 10
+                },
+                "livenessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 30,
+                  "failureThreshold": 5
+                }
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "persistentVolumeClaim": {
+                  "claimName": "sonarr-config"
+                }
+              },
+              {
+                "name": "media",
+                "persistentVolumeClaim": {
+                  "claimName": "media-library"
+                }
+              },
+              {
+                "name": "downloads",
+                "persistentVolumeClaim": {
+                  "claimName": "downloads"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "sonarr",
+        "namespace": "media",
+        "annotations": {
+          "metallb.io/loadBalancerIPs": "192.168.1.9",
+          "metallb.io/address-pool": "lab-reserved"
+        }
+      },
+      "spec": {
+        "type": "LoadBalancer",
+        "allocateLoadBalancerNodePorts": false,
+        "externalTrafficPolicy": "Local",
+        "loadBalancerSourceRanges": [
+          "192.168.1.109/32"
+        ],
+        "selector": {
+          "app": "sonarr"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8989,
+            "targetPort": "http",
+            "protocol": "TCP"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "sabnzbd-config",
+        "namespace": "media"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "storageClassName": "local-path",
+        "resources": {
+          "requests": {
+            "storage": "10Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "sabnzbd",
+        "namespace": "media"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "sabnzbd"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "sabnzbd"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "sabnzbd",
+                "image": "lscr.io/linuxserver/sabnzbd@sha256:948ea3dc45d68943ec14b33ba37ffa1488da3e9837bf3ca0f75621e971614d85",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "PUID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "PGID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "TZ",
+                    "value": "America/New_York"
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/config"
+                  },
+                  {
+                    "name": "media",
+                    "mountPath": "/data/media",
+                    "readOnly": false
+                  },
+                  {
+                    "name": "downloads",
+                    "mountPath": "/data/downloads"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "200m",
+                    "memory": "256Mi"
+                  },
+                  "limits": {
+                    "cpu": "2",
+                    "memory": "4Gi"
+                  }
+                },
+                "startupProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 5,
+                  "failureThreshold": 60
+                },
+                "readinessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 10
+                },
+                "livenessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 30,
+                  "failureThreshold": 5
+                }
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "persistentVolumeClaim": {
+                  "claimName": "sabnzbd-config"
+                }
+              },
+              {
+                "name": "media",
+                "persistentVolumeClaim": {
+                  "claimName": "media-library"
+                }
+              },
+              {
+                "name": "downloads",
+                "persistentVolumeClaim": {
+                  "claimName": "downloads"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "sabnzbd",
+        "namespace": "media",
+        "annotations": {
+          "metallb.io/loadBalancerIPs": "192.168.1.10",
+          "metallb.io/address-pool": "lab-reserved"
+        }
+      },
+      "spec": {
+        "type": "LoadBalancer",
+        "allocateLoadBalancerNodePorts": false,
+        "externalTrafficPolicy": "Local",
+        "loadBalancerSourceRanges": [
+          "192.168.1.109/32"
+        ],
+        "selector": {
+          "app": "sabnzbd"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http",
+            "protocol": "TCP"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "lidarr-config",
+        "namespace": "media"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "storageClassName": "local-path",
+        "resources": {
+          "requests": {
+            "storage": "10Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "lidarr",
+        "namespace": "media"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "lidarr"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "lidarr"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "name": "lidarr",
+                "image": "lscr.io/linuxserver/lidarr@sha256:8ab0fd370b604ae034d9a9c261a9d8d873bece33d9736852e7ce4f3566e4a35d",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8686
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "PUID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "PGID",
+                    "value": "1000"
+                  },
+                  {
+                    "name": "TZ",
+                    "value": "America/New_York"
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/config"
+                  },
+                  {
+                    "name": "media",
+                    "mountPath": "/data/media",
+                    "readOnly": false
+                  },
+                  {
+                    "name": "downloads",
+                    "mountPath": "/data/downloads"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "200m",
+                    "memory": "256Mi"
+                  },
+                  "limits": {
+                    "cpu": "2",
+                    "memory": "2Gi"
+                  }
+                },
+                "startupProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 5,
+                  "failureThreshold": 60
+                },
+                "readinessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 10
+                },
+                "livenessProbe": {
+                  "tcpSocket": {
+                    "port": "http"
+                  },
+                  "periodSeconds": 30,
+                  "failureThreshold": 5
+                }
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "persistentVolumeClaim": {
+                  "claimName": "lidarr-config"
+                }
+              },
+              {
+                "name": "media",
+                "persistentVolumeClaim": {
+                  "claimName": "media-library"
+                }
+              },
+              {
+                "name": "downloads",
+                "persistentVolumeClaim": {
+                  "claimName": "downloads"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "lidarr",
+        "namespace": "media",
+        "annotations": {
+          "metallb.io/loadBalancerIPs": "192.168.1.11",
+          "metallb.io/address-pool": "lab-reserved"
+        }
+      },
+      "spec": {
+        "type": "LoadBalancer",
+        "allocateLoadBalancerNodePorts": false,
+        "externalTrafficPolicy": "Local",
+        "loadBalancerSourceRanges": [
+          "192.168.1.109/32"
+        ],
+        "selector": {
+          "app": "lidarr"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8686,
+            "targetPort": "http",
+            "protocol": "TCP"
+          }
+        ]
+      }
+    }
+  ]
+}

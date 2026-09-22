@@ -1,0 +1,37 @@
+# Credentials and local authentication
+.env
+.env.*
+!.env.example
+.kube/
+**/.kube/
+*kubeconfig*
+*credentials*
+*passwords*
+secrets/
+**/secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+
+# Build logs, captures, generated reports, runtime data, and binaries
+*.log
+build.log
+*-verification.*
+verification.json
+final-check-output.txt
+ci-first-run.*
+*.pcap
+*.pcapng
+*.iso
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.db
+*.sqlite*
+.DS_Store
+__pycache__/
+.venv/

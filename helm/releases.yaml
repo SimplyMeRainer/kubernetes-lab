@@ -1,0 +1,21 @@
+# Reference inventory, not an automatically executed Helmfile.
+releases:
+  - name: metallb
+    namespace: metallb-system
+    chart: metallb
+    repository: https://metallb.github.io/metallb
+    version: 0.16.1
+    notes: Existing L2 installation; review FRR settings before recreating it.
+  - name: monitoring
+    namespace: monitoring
+    chart: kube-prometheus-stack
+    repository: https://prometheus-community.github.io/helm-charts
+    version: 91.5.0
+    valuesFile: monitoring-values.yaml
+    requiredExternalSecrets: [grafana-admin]
+  - name: argocd
+    namespace: cicd
+    chart: argo-cd
+    repository: https://argoproj.github.io/argo-helm
+    version: 10.9.2
+    valuesFile: argocd-values.yaml

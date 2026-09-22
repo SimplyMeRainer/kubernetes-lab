@@ -1,0 +1,7 @@
+{
+  "lidarr": "lscr.io/linuxserver/lidarr@sha256:8ab0fd370b604ae034d9a9c261a9d8d873bece33d9736852e7ce4f3566e4a35d",
+  "plex": "lscr.io/linuxserver/plex@sha256:be083133dfe001b6caed5a321720e6db9d38fdde1ea8f9d29340d40057a7fa53",
+  "radarr": "lscr.io/linuxserver/radarr@sha256:adb6c09d6b729ea5e642c99cea35af72702ef476bf4763f153299ac5db9f0b4f",
+  "sabnzbd": "lscr.io/linuxserver/sabnzbd@sha256:948ea3dc45d68943ec14b33ba37ffa1488da3e9837bf3ca0f75621e971614d85",
+  "sonarr": "lscr.io/linuxserver/sonarr@sha256:a5c1a5fecbef946927ab90ad68df319ac5fe644057e5fc18cd993f01ac07b2b2"
+}
