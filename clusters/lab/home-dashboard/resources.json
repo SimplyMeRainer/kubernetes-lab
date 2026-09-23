@@ -1,0 +1,563 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "metallb.io/v1beta1",
+      "kind": "IPAddressPool",
+      "metadata": {
+        "name": "lab-home-dashboard",
+        "namespace": "metallb-system"
+      },
+      "spec": {
+        "addresses": [
+          "192.168.1.15/32",
+          "192.168.1.16/32"
+        ],
+        "autoAssign": false
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "home"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "lab-dashboard"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "homeassistant-config",
+        "namespace": "home"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "storageClassName": "local-path",
+        "resources": {
+          "requests": {
+            "storage": "10Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "homeassistant",
+        "namespace": "home"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "homeassistant"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "homeassistant"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "terminationGracePeriodSeconds": 60,
+            "containers": [
+              {
+                "name": "homeassistant",
+                "image": "ghcr.io/home-assistant/home-assistant:2026.9.3@sha256:d8922685169707fd91e8b9729902d975f06157d005e422874d201e0261dda196",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8123
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "TZ",
+                    "value": "America/New_York"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "250m",
+                    "memory": "1Gi"
+                  },
+                  "limits": {
+                    "cpu": "2",
+                    "memory": "3Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/config"
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/",
+                    "port": "http"
+                  },
+                  "periodSeconds": 10,
+                  "failureThreshold": 60
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/",
+                    "port": "http"
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/",
+                    "port": "http"
+                  },
+                  "periodSeconds": 30,
+                  "timeoutSeconds": 5,
+                  "failureThreshold": 5
+                }
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "persistentVolumeClaim": {
+                  "claimName": "homeassistant-config"
+                }
+              }
+            ],
+            "nodeSelector": {
+              "kubernetes.io/hostname": "o-3090-01"
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "homepage-config",
+        "namespace": "lab-dashboard"
+      },
+      "data": {
+        "settings.yaml": "{\"title\": \"Rainer\\u2019s Kubernetes Lab\", \"description\": \"Bare-metal services, home automation and local AI\", \"theme\": \"dark\", \"color\": \"slate\", \"headerStyle\": \"clean\", \"statusStyle\": \"dot\", \"hideVersion\": true, \"layout\": {\"Infrastructure\": {\"style\": \"row\", \"columns\": 3}, \"Home and AI\": {\"style\": \"row\", \"columns\": 2}, \"Media\": {\"style\": \"row\", \"columns\": 5}, \"Lab nodes\": {\"style\": \"row\", \"columns\": 3}}}",
+        "services.yaml": "[{\"Infrastructure\": [{\"Grafana\": {\"href\": \"http://192.168.1.12\", \"description\": \"Metrics dashboards\"}}, {\"Prometheus\": {\"href\": \"http://192.168.1.13:9090\", \"description\": \"Cluster, node and workload health\"}}, {\"Argo CD\": {\"href\": \"https://192.168.1.14\", \"description\": \"GitOps console; manual adoption pending\"}}, {\"GitHub\": {\"href\": \"https://github.com/SimplyMeRainer/kubernetes-lab\", \"description\": \"Private lab configuration\"}}, {\"Synology\": {\"href\": \"https://192.168.1.107:5001\", \"description\": \"NAS / DSM; Git mirror access pending\"}}]}, {\"Home and AI\": [{\"Home Assistant\": {\"href\": \"http://192.168.1.15\", \"siteMonitor\": \"http://homeassistant.home.svc.cluster.local/\", \"description\": \"Complete owner onboarding; Container edition\"}}, {\"VibeStudio\": {\"href\": \"http://192.168.1.17\", \"siteMonitor\": \"http://vibestudio.ai.svc.cluster.local/healthz\", \"description\": \"Gemma 4 12B \\u00b7 CPU inference \\u00b7 reviewed suggestions only\"}}]}, {\"Media\": [{\"Plex\": {\"href\": \"http://192.168.1.7:32400/web\", \"description\": \"Media library\"}}, {\"Radarr\": {\"href\": \"http://192.168.1.8:7878\", \"description\": \"Movies\"}}, {\"Sonarr\": {\"href\": \"http://192.168.1.9:8989\", \"description\": \"TV\"}}, {\"SABnzbd\": {\"href\": \"http://192.168.1.10:8080\", \"description\": \"Downloads\"}}, {\"Lidarr\": {\"href\": \"http://192.168.1.11:8686\", \"description\": \"Music\"}}]}, {\"Lab nodes\": [{\"o-3090-01\": {\"href\": \"http://192.168.1.13:9090\", \"description\": \"192.168.1.3 \\u00b7 control plane \\u00b7 NVMe local storage\"}}, {\"o-3090-02\": {\"href\": \"http://192.168.1.13:9090\", \"description\": \"192.168.1.4 \\u00b7 worker \\u00b7 local Gemma inference\"}}, {\"o-3060-01\": {\"href\": \"http://192.168.1.13:9090\", \"description\": \"192.168.1.5 \\u00b7 worker \\u00b7 NVMe preserved/unprovisioned\"}}]}]",
+        "widgets.yaml": "[]",
+        "bookmarks.yaml": "[]",
+        "docker.yaml": "{}",
+        "proxmox.yaml": "{}",
+        "kubernetes.yaml": "mode: disabled\n",
+        "custom.css": "",
+        "custom.js": ""
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "homepage",
+        "namespace": "lab-dashboard"
+      },
+      "spec": {
+        "replicas": 1,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "homepage"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "homepage"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "terminationGracePeriodSeconds": 60,
+            "containers": [
+              {
+                "name": "homepage",
+                "image": "ghcr.io/gethomepage/homepage:v2.4.0@sha256:643bd0be730d40f69d58028a55d1a896739333e8815786df42bc97f109ecbe61",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 3000
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "MY_POD_IP",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "status.podIP"
+                      }
+                    }
+                  },
+                  {
+                    "name": "HOMEPAGE_ALLOWED_HOSTS",
+                    "value": "$(MY_POD_IP):3000,192.168.1.16,homepage.lab-dashboard.lab.home.arpa"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "256Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "768Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  },
+                  "runAsUser": 1000,
+                  "runAsGroup": 1000,
+                  "runAsNonRoot": true
+                },
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/app/config/settings.yaml",
+                    "subPath": "settings.yaml",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/app/config/services.yaml",
+                    "subPath": "services.yaml",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/app/config/widgets.yaml",
+                    "subPath": "widgets.yaml",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/app/config/bookmarks.yaml",
+                    "subPath": "bookmarks.yaml",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/app/config/docker.yaml",
+                    "subPath": "docker.yaml",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/app/config/proxmox.yaml",
+                    "subPath": "proxmox.yaml",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/app/config/kubernetes.yaml",
+                    "subPath": "kubernetes.yaml",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/app/config/custom.css",
+                    "subPath": "custom.css",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/app/config/custom.js",
+                    "subPath": "custom.js",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "logs",
+                    "mountPath": "/app/config/logs"
+                  }
+                ],
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/api/healthcheck",
+                    "port": "http"
+                  },
+                  "periodSeconds": 10,
+                  "failureThreshold": 60
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/api/healthcheck",
+                    "port": "http"
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/api/healthcheck",
+                    "port": "http"
+                  },
+                  "periodSeconds": 30,
+                  "timeoutSeconds": 5,
+                  "failureThreshold": 5
+                }
+              }
+            ],
+            "volumes": [
+              {
+                "name": "config",
+                "configMap": {
+                  "name": "homepage-config"
+                }
+              },
+              {
+                "name": "logs",
+                "emptyDir": {
+                  "sizeLimit": "100Mi"
+                }
+              }
+            ],
+            "nodeSelector": {
+              "kubernetes.io/hostname": "o-3090-01"
+            },
+            "securityContext": {
+              "fsGroup": 1000
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "homeassistant",
+        "namespace": "home",
+        "annotations": {
+          "metallb.io/loadBalancerIPs": "192.168.1.15"
+        }
+      },
+      "spec": {
+        "type": "LoadBalancer",
+        "allocateLoadBalancerNodePorts": false,
+        "externalTrafficPolicy": "Local",
+        "loadBalancerSourceRanges": [
+          "192.168.1.109/32"
+        ],
+        "selector": {
+          "app": "homeassistant"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 80,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "homeassistant-owner-access",
+        "namespace": "home"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "homeassistant"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "ipBlock": {
+                  "cidr": "192.168.1.109/32"
+                }
+              },
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "lab-dashboard"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "homepage"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8123,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "homepage",
+        "namespace": "lab-dashboard",
+        "annotations": {
+          "metallb.io/loadBalancerIPs": "192.168.1.16"
+        }
+      },
+      "spec": {
+        "type": "LoadBalancer",
+        "allocateLoadBalancerNodePorts": false,
+        "externalTrafficPolicy": "Local",
+        "loadBalancerSourceRanges": [
+          "192.168.1.109/32"
+        ],
+        "selector": {
+          "app": "homepage"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 80,
+            "targetPort": "http"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "homepage-owner-access",
+        "namespace": "lab-dashboard"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "homepage"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "ipBlock": {
+                  "cidr": "192.168.1.109/32"
+                }
+              },
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "lab-dashboard"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "homepage"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 3000,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "vibestudio-dashboard-health",
+        "namespace": "ai"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "vibestudio"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "lab-dashboard"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "homepage"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 8080
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

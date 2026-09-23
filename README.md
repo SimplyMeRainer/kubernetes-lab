@@ -4,6 +4,14 @@ Private configuration repository for **SimplyMeRainer's bare-metal Kubernetes tr
 
 This initial import contains reviewed, non-secret desired-state manifests and version-pinned Helm release references. **Creating this repository does not connect Argo CD, deploy resources, or turn on automatic synchronization.** No GitHub Actions workflow or cluster credentials are included.
 
+## New services
+
+- [Home Assistant](http://192.168.1.15) — owner onboarding required.
+- [Overall lab dashboard](http://192.168.1.16) — Homepage.
+- [VibeStudio](http://192.168.1.17) — local Gemma 4 12B coding suggestions.
+
+See [service setup, restrictions and operations](docs/services.md). These new UIs are initially restricted to the administration Mac. Synology Git is pending access details; no mirror has been configured.
+
 ## Layout
 
 ```text
@@ -26,8 +34,9 @@ The completed one-time PipelineRun was deliberately excluded. Applying declarati
 
 These manifests are for the existing lab, not arbitrary machines:
 
-- Control plane: `192.168.1.3`; worker: `192.168.1.4`.
-- MetalLB: `192.168.1.6–192.168.1.14`, explicit allocation only.
+- Control plane: `o-3090-01` at `192.168.1.3`; workers: `o-3090-02` at `192.168.1.4` and `o-3060-01` at `192.168.1.5`.
+- The 3060 boots from SATA-0. Its NVMe remains unprovisioned and preserved; local-path provisioning is disabled on that node.
+- MetalLB: `192.168.1.6–192.168.1.14` plus a separate explicit `192.168.1.15/32` and `192.168.1.16/32` home/dashboard pools and a `192.168.1.17/32` VibeStudio pool. All allocation is explicit.
 - Administrative client source range: `192.168.1.109/32`.
 - Synology NFS: `192.168.1.107`, existing `/volume1/media` and `/volume1/downloads` exports.
 - Kubernetes pod CIDR: `10.244.0.0/16`; Service CIDR: `10.96.0.0/12`.
