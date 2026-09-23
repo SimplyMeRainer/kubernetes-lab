@@ -1,0 +1,122 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lab
+  namespace: cicd
+spec:
+  description: Bare-metal home lab configuration from the read-only Synology mirror
+  sourceRepos:
+    - ssh://rserrano@192.168.1.107/volume1/homes/rserrano/repos/kubernetes-lab.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: media
+    - server: https://kubernetes.default.svc
+      namespace: dns-system
+    - server: https://kubernetes.default.svc
+      namespace: staging
+    - server: https://kubernetes.default.svc
+      namespace: cicd
+    - server: https://kubernetes.default.svc
+      namespace: ai
+    - server: https://kubernetes.default.svc
+      namespace: home
+    - server: https://kubernetes.default.svc
+      namespace: lab-dashboard
+    - server: https://kubernetes.default.svc
+      namespace: production
+    - server: https://kubernetes.default.svc
+      namespace: metallb-system
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: LimitRange
+    - group: ""
+      kind: PersistentVolumeClaim
+    - group: ""
+      kind: ResourceQuota
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ServiceAccount
+    - group: apps
+      kind: Deployment
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    - group: policy
+      kind: PodDisruptionBudget
+    - group: rbac.authorization.k8s.io
+      kind: Role
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
+    - group: tekton.dev
+      kind: Pipeline
+    - group: metallb.io
+      kind: IPAddressPool
+    - group: metallb.io
+      kind: L2Advertisement
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: ""
+      kind: PersistentVolume
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: lab-groups
+  namespace: cicd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  syncPolicy:
+    applicationsSync: create-update
+    preserveResourcesOnDeletion: true
+  generators:
+    - list:
+        elements:
+          - name: bootstrap
+            path: clusters/lab/bootstrap
+            namespace: cicd
+          - name: media
+            path: clusters/lab/media
+            namespace: media
+          - name: dns
+            path: clusters/lab/dns
+            namespace: dns-system
+          - name: staging
+            path: clusters/lab/staging
+            namespace: staging
+          - name: cicd
+            path: clusters/lab/cicd
+            namespace: cicd
+          - name: ai
+            path: clusters/lab/ai
+            namespace: ai
+          - name: home-dashboard
+            path: clusters/lab/home-dashboard
+            namespace: lab-dashboard
+  template:
+    metadata:
+      name: 'lab-{{.name}}'
+      namespace: cicd
+      labels:
+        lab.home.arpa/managed-by: argocd
+    spec:
+      project: lab
+      source:
+        repoURL: ssh://rserrano@192.168.1.107/volume1/homes/rserrano/repos/kubernetes-lab.git
+        targetRevision: main
+        path: '{{.path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.namespace}}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=false
+          - RespectIgnoreDifferences=true
+      revisionHistoryLimit: 5

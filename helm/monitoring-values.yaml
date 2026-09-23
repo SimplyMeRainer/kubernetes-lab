@@ -13,7 +13,7 @@ grafana:
       metallb.io/loadBalancerIPs: 192.168.1.12
       metallb.io/address-pool: lab-reserved
     externalTrafficPolicy: Local
-    loadBalancerSourceRanges: [192.168.1.109/32]
+    loadBalancerSourceRanges: [192.168.1.0/24]
   resources:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {cpu: "1", memory: 1Gi}
@@ -29,7 +29,7 @@ prometheus:
       metallb.io/loadBalancerIPs: 192.168.1.13
       metallb.io/address-pool: lab-reserved
     externalTrafficPolicy: Local
-    loadBalancerSourceRanges: [192.168.1.109/32]
+    loadBalancerSourceRanges: [192.168.1.0/24]
   prometheusSpec:
     retention: 7d
     retentionSize: 10GB

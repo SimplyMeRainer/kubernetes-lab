@@ -268,7 +268,7 @@
         "allocateLoadBalancerNodePorts": false,
         "externalTrafficPolicy": "Local",
         "loadBalancerSourceRanges": [
-          "192.168.1.109/32"
+          "192.168.1.0/24"
         ],
         "selector": {
           "app": "plex"
@@ -439,7 +439,7 @@
         "allocateLoadBalancerNodePorts": false,
         "externalTrafficPolicy": "Local",
         "loadBalancerSourceRanges": [
-          "192.168.1.109/32"
+          "192.168.1.0/24"
         ],
         "selector": {
           "app": "radarr"
@@ -610,7 +610,7 @@
         "allocateLoadBalancerNodePorts": false,
         "externalTrafficPolicy": "Local",
         "loadBalancerSourceRanges": [
-          "192.168.1.109/32"
+          "192.168.1.0/24"
         ],
         "selector": {
           "app": "sonarr"
@@ -781,7 +781,7 @@
         "allocateLoadBalancerNodePorts": false,
         "externalTrafficPolicy": "Local",
         "loadBalancerSourceRanges": [
-          "192.168.1.109/32"
+          "192.168.1.0/24"
         ],
         "selector": {
           "app": "sabnzbd"
@@ -952,7 +952,7 @@
         "allocateLoadBalancerNodePorts": false,
         "externalTrafficPolicy": "Local",
         "loadBalancerSourceRanges": [
-          "192.168.1.109/32"
+          "192.168.1.0/24"
         ],
         "selector": {
           "app": "lidarr"

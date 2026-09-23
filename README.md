@@ -2,15 +2,15 @@
 
 Private configuration repository for **SimplyMeRainer's bare-metal Kubernetes training lab**.
 
-This initial import contains reviewed, non-secret desired-state manifests and version-pinned Helm release references. **Creating this repository does not connect Argo CD, deploy resources, or turn on automatic synchronization.** No GitHub Actions workflow or cluster credentials are included.
+This repository contains reviewed, non-secret desired-state manifests and version-pinned Helm release references. The live Argo CD instance reads the **Synology mirror** over a repository-scoped read-only SSH deploy key. The applications use manual sync: automatic synchronization, pruning, and self-healing are disabled. No GitHub Actions workflow or cluster credentials are included.
 
 ## New services
 
 - [Home Assistant](http://192.168.1.15) — owner onboarding required.
-- [Overall lab dashboard](http://192.168.1.16) — Homepage.
+- [Overall lab dashboard](http://192.168.1.18) — Homepage.
 - [VibeStudio](http://192.168.1.17) — local Gemma 4 12B coding suggestions.
 
-See [service setup, restrictions and operations](docs/services.md). These new UIs are initially restricted to the administration Mac. Synology Git is pending access details; no mirror has been configured.
+See [service setup, restrictions and operations](docs/services.md). All lab UIs allow clients from the management subnet `192.168.1.0/24`. The canonical private GitHub repository is mirrored to Synology at `/volume1/homes/rserrano/repos/kubernetes-lab.git` for local Argo CD access.
 
 ## Layout
 
@@ -36,8 +36,8 @@ These manifests are for the existing lab, not arbitrary machines:
 
 - Control plane: `o-3090-01` at `192.168.1.3`; workers: `o-3090-02` at `192.168.1.4` and `o-3060-01` at `192.168.1.5`.
 - The 3060 boots from SATA-0. Its NVMe remains unprovisioned and preserved; local-path provisioning is disabled on that node.
-- MetalLB: `192.168.1.6–192.168.1.14` plus a separate explicit `192.168.1.15/32` and `192.168.1.16/32` home/dashboard pools and a `192.168.1.17/32` VibeStudio pool. All allocation is explicit.
-- Administrative client source range: `192.168.1.109/32`.
+- MetalLB: `192.168.1.6–192.168.1.14` plus a separate explicit `192.168.1.15/32` and `192.168.1.18/32` home/dashboard pools and a `192.168.1.17/32` VibeStudio pool. All allocation is explicit.
+- UI client source range: `192.168.1.0/24` (management VLAN).
 - Synology NFS: `192.168.1.107`, existing `/volume1/media` and `/volume1/downloads` exports.
 - Kubernetes pod CIDR: `10.244.0.0/16`; Service CIDR: `10.96.0.0/12`.
 - Local storage class: `local-path`; volumes are node-bound and not replicated.
@@ -72,11 +72,13 @@ Validation requires the installed Calico/MetalLB/Tekton CRDs and storage compone
 - Use a repository-scoped **read-only deploy key** or appropriately scoped GitHub App for Argo CD. Do not place the Mac's broad GitHub CLI OAuth token in the cluster or a manifest.
 - `.gitignore` is a guardrail, not a secret scanner. Review the staged diff and scan before each push.
 
-## Safe GitOps adoption
+## Argo CD adoption
 
-Start by connecting **only `clusters/lab/staging`** to a restricted Argo CD project/application, with manual sync and no automatic pruning. This connection has not been made by the initial repository creation.
+`argocd/lab-applications.yaml` defines the restricted `lab` project and seven generated applications for bootstrap, media, DNS, staging, CI/CD, AI, and home/dashboard configuration. Argo CD reads the Synology mirror with a dedicated read-only deploy key; that key is stored only in the live `cicd` namespace Secret and is not committed.
 
-Do not point one unrestricted recursive Argo CD application at the repository root: bootstrap files include cluster-scoped PVs/RBAC/pools and multiple namespaces. Stage adoption, confirm resource ownership, and separately manage CRDs and Helm releases.
+Synchronization is deliberately manual. There is no `automated` policy, pruning, or self-healing. This avoids an initial bulk takeover of live resources and prevents accidental deletion while ownership differences are reviewed. The one-time PipelineRun remains excluded, so repository reconciliation cannot replay it.
+
+Do not create one unrestricted recursive application at the repository root: bootstrap files include cluster-scoped PVs/RBAC/pools and multiple namespaces. The AppProject allowlists only the required repositories, namespaces, and cluster-scoped kinds. CRDs and Helm releases remain separate operator-managed prerequisites.
 
 The Tekton pipeline also patches the training deployment. Coordinate ownership with Argo CD before enabling self-healing so the two controllers do not conflict.
 

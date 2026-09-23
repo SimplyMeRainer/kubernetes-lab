@@ -14,11 +14,11 @@ Mount these **five runtime files together**, read-only, at `/app`:
 
 Start with `python -B /app/vibestudio.py` in a Python 3.12 image. Use a single replica and one process: inference serialization is process-local, not distributed. Mount the existing workspace PVC at `/workspace`, preferably read-only. It must exist and be readable by the non-root runtime UID. The app does not create it or persist uploads/suggestions. No image build or dependencies are required. ConfigMap volume updates should be followed by a pod restart to keep Python and UI versions consistent.
 
-Deployment controls are the operator's responsibility: run non-root, drop capabilities, read-only root filesystem, `automountServiceAccountToken: false`, no cluster RBAC, resource limits, and network policies permitting the owner's approved LAN source and the explicit trusted Homepage exception below inbound, and only the internal Ollama service/DNS outbound. **No login is implemented. Do not expose this app publicly.** Pin `APP_ORIGIN` to the exact actual browser origin, including port when nonstandard. Do not infer a public URL from this document. Source allowlisting is not authentication or TLS.
+Deployment controls are the operator's responsibility: run non-root, drop capabilities, read-only root filesystem, `automountServiceAccountToken: false`, no cluster RBAC, resource limits, and network policies permitting the management subnet (192.168.1.0/24) and the explicit trusted Homepage exception below inbound, and only the internal Ollama service/DNS outbound. **No login is implemented. Do not expose this app publicly.** Pin `APP_ORIGIN` to the exact actual browser origin, including port when nonstandard. Do not infer a public URL from this document. Source allowlisting is not authentication or TLS.
 
 Set Ollama's server-side `OLLAMA_NO_CLOUD=1` and deny Internet egress for the Ollama deployment as well as the app. The app rejects public/cloud host URLs and model names containing `cloud`, does not use environment HTTP proxies, and never follows redirects. Operator-controlled DNS, Ollama model aliases, and server-side network policy remain trust boundaries.
 
-Homepage is an explicit **trusted caller** exception to the owner-only ingress
+Homepage is an explicit **trusted caller** exception to the management-subnet ingress
 boundary. The `vibestudio-dashboard-health` NetworkPolicy requires both namespace
 `lab-dashboard` and pod label `app=homepage` in the same peer, but allows TCP 8080
 for **all VibeStudio endpoints**, not just `/healthz`. NetworkPolicy cannot filter

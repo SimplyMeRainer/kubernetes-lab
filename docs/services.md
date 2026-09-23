@@ -5,10 +5,10 @@
 | Service | URL | Deployment |
 |---|---|---|
 | Home Assistant | http://192.168.1.15 | `home/homeassistant` |
-| Homepage lab dashboard | http://192.168.1.16 | `lab-dashboard/homepage` |
+| Homepage lab dashboard | http://192.168.1.18 | `lab-dashboard/homepage` |
 | VibeStudio | http://192.168.1.17 | `ai/vibestudio` |
 
-External access to all three new UIs is restricted to the administration Mac **192.168.1.109/32** by LoadBalancer source ranges and ingress NetworkPolicies. Keep that DHCP reservation. They use HTTP, not TLS; do not publish them to the Internet. Homepage and VibeStudio have no application login. Explicitly review access controls before adding other clients. NodePorts are disabled. The native VLAN-1 L2Advertisement must reference all three pools: `lab-reserved`, `lab-home-dashboard`, `lab-vibestudio`.
+External access to all lab UIs is allowed from the management subnet **192.168.1.0/24**, as requested by the owner, using LoadBalancer source ranges and ingress NetworkPolicies. Other source subnets are not added. Any management-network client can reach Home Assistant onboarding until owner setup is complete. They use HTTP, not TLS; do not publish them to the Internet. Homepage and VibeStudio have no application login. Explicitly review access controls before adding other clients. NodePorts are disabled. The native VLAN-1 L2Advertisement must reference all three pools: `lab-reserved`, `lab-home-dashboard`, `lab-vibestudio`.
 
 ## VibeStudio and Gemma
 
@@ -148,7 +148,7 @@ Homepage **v2.4.0** provides grouped links for infrastructure, local AI, home au
 
 Configuration is declarative in a ConfigMap. No Kubernetes API permissions, mounted service-account token, secret access, Docker socket or API credentials are granted. No metrics-server was added. Configuration changes require a rollout because files use subPath mounts.
 
-Homepage is an explicit **trusted caller** exception to the owner-only ingress
+Homepage is an explicit **trusted caller** exception to the management-subnet ingress
 boundary. The `vibestudio-dashboard-health` NetworkPolicy requires both namespace
 `lab-dashboard` and pod label `app=homepage` in the same peer, but allows TCP 8080
 for **all VibeStudio endpoints**, not just `/healthz`. NetworkPolicy cannot filter
@@ -170,7 +170,7 @@ kubectl apply --dry-run=server -k clusters/lab/home-dashboard
 kubectl -n home rollout status deployment/homeassistant
 kubectl -n lab-dashboard rollout status deployment/homepage
 curl --fail http://192.168.1.15/api/onboarding
-curl --fail http://192.168.1.16/api/healthcheck
+curl --fail http://192.168.1.18/api/healthcheck
 curl --fail http://192.168.1.17/healthz
 ```
 
