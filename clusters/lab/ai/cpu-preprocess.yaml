@@ -1,0 +1,69 @@
+# CPU preprocessing smoke workload. WaitForFirstConsumer binds this RWO local-path PVC
+# on o-3060-01, using its dedicated NVMe tier at /srv/lab/volumes.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cpu-preprocess-workspace
+  namespace: ai
+  labels:
+    lab.home.arpa/purpose: cpu-preprocessing
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cpu-preprocess-smoke
+  namespace: ai
+  labels:
+    app: cpu-preprocess-smoke
+    lab.home.arpa/experiment: nvme-preprocess-smoke
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: cpu-preprocess-smoke
+        lab.home.arpa/experiment: nvme-preprocess-smoke
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        kubernetes.io/hostname: o-3060-01
+      containers:
+        - name: preprocess
+          image: docker.io/library/python:3.12-alpine
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "1"
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+          command: [python, -c]
+          args:
+            - |
+              import hashlib, json, random, time
+              random.seed(42)
+              start = time.perf_counter()
+              records = [{'id': i, 'feature': random.random(), 'label': i % 10} for i in range(200000)]
+              payload = '\n'.join(json.dumps(r, sort_keys=True) for r in records).encode()
+              artifact = {
+                  'records': len(records),
+                  'sha256': hashlib.sha256(payload).hexdigest(),
+                  'elapsed_seconds': round(time.perf_counter() - start, 3),
+                  'pipeline_stage': 'cpu-preprocessing',
+              }
+              open('/workspace/preprocess-manifest.json', 'w').write(json.dumps(artifact, indent=2) + '\n')
+              print(json.dumps(artifact, sort_keys=True))
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: cpu-preprocess-workspace

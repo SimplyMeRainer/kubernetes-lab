@@ -4,3 +4,4 @@ resources:
   - ollama.json
   - vibestudio.json
   - gpu-training.yaml
+  - cpu-preprocess.yaml
