@@ -19,3 +19,10 @@ releases:
     repository: https://argoproj.github.io/argo-helm
     version: 10.9.2
     valuesFile: argocd-values.yaml
+  - name: gpu-operator
+    namespace: gpu-operator
+    chart: gpu-operator
+    repository: https://helm.ngc.nvidia.com/nvidia
+    version: 26.7.0
+    valuesFile: gpu-operator-values.yaml
+    notes: Single-GPU g3 deployment; driver, toolkit, GFD, device plugin, and DCGM are operator-managed.

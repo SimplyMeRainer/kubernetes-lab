@@ -1,0 +1,23 @@
+# NVIDIA GPU Operator v26.7.0 for the single GPU lab node.
+# g3 is a tainted control plane, so GPU operands explicitly tolerate it.
+daemonsets:
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+operator:
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+dcgmExporter:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+  enablePodLabels: true
+  podLabelAllowlistRegex:
+    - '^app$'
+    - '^lab.home.arpa/.*$'
