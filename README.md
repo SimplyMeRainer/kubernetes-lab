@@ -1,8 +1,8 @@
 # Kubernetes lab configuration
 
-Private configuration repository for **SimplyMeRainer's bare-metal Kubernetes training lab**.
+Public, sanitized configuration for **SimplyMeRainer's bare-metal Kubernetes training lab**.
 
-This repository contains reviewed, non-secret desired-state manifests and version-pinned Helm release references. The live Argo CD instance reads the **Synology mirror** over a repository-scoped read-only SSH deploy key. The applications use manual sync: automatic synchronization, pruning, and self-healing are disabled. No GitHub Actions workflow or cluster credentials are included.
+This repository contains reviewed, non-secret desired-state manifests, runbooks, and version-pinned Helm release references. The live Argo CD instance reads a **private Synology mirror** over a repository-scoped read-only SSH deploy key; that key and the runtime-only operating material are not in this public repository. The applications use manual sync: automatic synchronization, pruning, and self-healing are disabled. No GitHub Actions workflow or cluster credentials are included.
 
 ## New services
 
@@ -10,7 +10,7 @@ This repository contains reviewed, non-secret desired-state manifests and versio
 - [Overall lab dashboard](http://192.168.1.18) — Homepage.
 - [VibeStudio](http://192.168.1.17) — local Gemma 4 12B coding suggestions.
 
-See [service setup, restrictions and operations](docs/services.md). All lab UIs allow clients from the management subnet `192.168.1.0/24`. The canonical private GitHub repository is mirrored to Synology at `/volume1/homes/rserrano/repos/kubernetes-lab.git` for local Argo CD access.
+See [service setup, restrictions and operations](docs/services.md). All lab UIs allow clients from the management subnet `192.168.1.0/24`. GitHub is the reviewable public source; the private Synology mirror at `/volume1/homes/rserrano/repos/kubernetes-lab.git` is the local Argo CD source.
 
 ## Layout
 
@@ -71,6 +71,12 @@ Validation requires the installed Calico/MetalLB/Tekton CRDs and storage compone
 - Application credentials remain on the Mac and in application/cluster storage, not Git.
 - Use a repository-scoped **read-only deploy key** or appropriately scoped GitHub App for Argo CD. Do not place the Mac's broad GitHub CLI OAuth token in the cluster or a manifest.
 - `.gitignore` is a guardrail, not a secret scanner. Review the staged diff and scan before each push.
+
+## Publication boundary
+
+The public repository intentionally includes safe manifests, Helm values, image-lock references, architecture/runbook documentation, and non-secret examples such as [`examples/credentials.example.json`](examples/credentials.example.json). Every secret slot in an example uses the exact placeholder `<insert secret here>`.
+
+The following remain local-only and must never be copied here: kubeconfigs, Terraform state, private keys, deploy keys, credential bundles, real OpenStack or cloud credentials, encrypted credential archives, runtime output, host logs, bulk backups, and generated verification captures. The private Synology operational checkout may contain those local artifacts, but its credential-bearing history is not a source for this public GitHub branch.
 
 ## Argo CD adoption
 
