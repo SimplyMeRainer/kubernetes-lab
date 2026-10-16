@@ -9,6 +9,7 @@
 *passwords*
 secrets/
 **/secrets/
+private/
 *.key
 *.pem
 *.p12
@@ -35,3 +36,6 @@ ci-first-run.*
 .DS_Store
 __pycache__/
 .venv/
+
+# Public-safe credential shape only; real credential material stays excluded.
+!examples/credentials.example.json

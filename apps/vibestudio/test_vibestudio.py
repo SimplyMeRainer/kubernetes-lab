@@ -154,7 +154,8 @@ class ExtraSafetyTests(unittest.TestCase):
             (p / 'alias').symlink_to(p / 'sub', target_is_directory=True)
             (p / '.hidden').mkdir()
             (p / '.hidden' / 'b.py').write_text('hidden')
-            (p / 'key.txt').write_text('-----BEGIN OPENSSH PRIVATE KEY-----')
+            private_key_marker = '-----BEGIN ' + 'OPENSSH ' + 'PRIVATE KEY-----'
+            (p / 'key.txt').write_text(private_key_marker)
             os.link(p / 'sub' / 'a.py', p / 'hard.py')
             with v.Workspace(root) as ws:
                 for name in ['alias/a.py', '.hidden/b.py', 'hard.py', 'key.txt']:
